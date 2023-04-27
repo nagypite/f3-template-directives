@@ -32,10 +32,13 @@ class Select extends \Template\TagHandler {
 	 */
 	protected function resolveContent($node, $attr) {
 		// make the current scope available to nested elements
-		if (array_key_exists("name", $attr))
-			$this->name = $this->attrExport($attr['name']);
+		if (array_key_exists("name", $attr)) {
+      $this->name = $this->attrExport($attr['name']);
+      $this->f3->set('template.taghandler.select.name', $this->name);
+    }
 		$out = parent::resolveContent($node,$attr);
 		$this->name = NULL;
+    $this->f3->set('template.taghandler.select.name', null);
 		return $out;
 	}
 

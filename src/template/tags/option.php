@@ -26,9 +26,10 @@ class Option extends \Template\TagHandler {
 	 * @return string
 	 */
 	function build($attr, $content) {
-		$name = Select::instance()->getActiveName();
+		$name = $this->f3->get('template.taghandler.select.name');
 
 		$isSelected='';
+
 		if ($name && array_key_exists("value", $attr)) {
 			$name = Form::instance()->getSrcKey().$name;
 			$value = $this->tokenExport($attr['value']);
