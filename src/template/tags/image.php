@@ -34,7 +34,7 @@ class Image extends \Template\TagHandler {
 	 * Image constructor.
 	 * @param array $options
 	 */
-	function __construct($options=[]) {
+  function __construct($options=[]) {
 		$this->setOptions($options);
 		parent::__construct();
 	}
@@ -61,30 +61,40 @@ class Image extends \Template\TagHandler {
 	 * @param $content
 	 * @return string
 	 */
-	function build($attr, $content) {
+  function build($attr, $content) {
 
-		if (isset($attr['src']) && (isset($attr['width'])||isset($attr['height']))) {
-			$opt = [
-				'width'=>null,
-				'height'=>null,
-				'crop'=>false,
-				'enlarge'=>false,
-				'quality'=>$this->options['default_quality'],
-			];
-			// merge into defaults
-			$opt = array_intersect_key($attr + $opt, $opt);
-			// get dynamic path
-			$path = preg_match('/{{(.+?)}}/s',$attr['src']) ?
-				$this->tmpl->token($attr['src']) : var_export($attr['src'],true);
-			// clean up attributes
-			$attr=array_diff_key($attr,$opt);
-			$opt = var_export($opt,true);
-			unset($attr['src']);
-			$out='<img src="<?php echo '.$this->getTagReferenceString().'->resize('.
-				$path.','.$opt.');?>"'.$this->resolveParams($attr).' />';
-		} else
+    $out = null;
+    if (isset($attr['src']) && !preg_match('#http(s)?://#', $attr['src'])) {
+      if (isset($attr['width'])||isset($attr['height'])) {
+        $opt = [
+          'width'=>null,
+          'height'=>null,
+          'crop'=>false,
+          'enlarge'=>false,
+          'quality'=>$this->options['default_quality'],
+        ];
+        // merge into defaults
+        $opt = array_intersect_key($attr + $opt, $opt);
+        // get dynamic path
+        $path = preg_match('/{{(.+?)}}/s',$attr['src']) ?
+          $this->tmpl->token($attr['src']) : var_export($attr['src'],true);
+        // clean up attributes
+        $attr=array_diff_key($attr,$opt);
+        $opt = var_export($opt,true);
+        unset($attr['src']);
+        $out='<img src="<?php echo '.$this->getTagReferenceString().'->resize('.
+          $path.','.$opt.');?>"'.$this->resolveParams($attr).' />';
+      }
+      else {
+        $attr['data-original-src'] = $attr['src'];
+        $attr['src'] = \TemplateHelper::instance()->assetPath($attr['src']);
+      }
+    }
+
+    if (is_null($out)) {
 			// just forward / bypass further processing
-			$out = '<img'.$this->resolveParams($attr).' />';
+      $out = '<img'.$this->resolveParams($attr).' />';
+    }
 
 		return $out;
 	}
@@ -121,12 +131,14 @@ class Image extends \Template\TagHandler {
 			if ($found) {
 				$imgObj = new \Image($file, false, $src_path);
 			} else {
+        $log = new \Log('debug.log');
+        $log->write('img not found - '.$file.' at '.json_encode($path).' - '.json_encode($opt));
 				if ($this->options['not_found_callback'])
 					$this->f3->call($this->options['not_found_callback'],array($src_path.$file));
 				if ($this->options['not_found_fallback'])
 					$imgObj = new \Image($this->options['not_found_fallback'], false);
 				else
-					return 'http://placehold.it/250x250?text=Not+Found';
+					return 'http://placehold.it/'.($opt['width']??'250').'x'.($opt['height']??'250').'?text=Not+Found';
 			}
 			if (!is_dir($dst_path))
 				mkdir($dst_path,0775,true);

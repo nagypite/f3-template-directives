@@ -106,12 +106,15 @@ class Form extends \Template\TagHandler {
 	 * @param $content
 	 * @return string
 	 */
-	function build($attr, $content) {
+  function build($attr, $content) {
+    if (!empty($attr['action'])) {
+      $attr['data-original-action'] = $attr['action'];
+      $attr['action'] = \TemplateHelper::instance()->path($attr['action']);
+    }
+
 		// resolve all other / unhandled tag attributes
 		$attr = $this->resolveParams($attr);
 		// create element and return
 		return '<form'.$attr.'>'.$content.'</form>';
 	}
-
-
 }
